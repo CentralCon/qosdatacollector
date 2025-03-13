@@ -15,33 +15,31 @@ class DataCollector:
             'cpu_usage': psutil.cpu_percent(),
             'memory_usage': psutil.virtual_memory().percent,
             'disk_usage': psutil.disk_usage('/').percent,
-            'network_latency': self.ping_latency('8.8.8.8'),  # Google DNS as test
-            'running_processes': len(psutil.pids()),  # Number of active processes
+            'network_latency': self.ping_latency('8.8.8.8'),
+            'running_processes': len(psutil.pids()),
         }
 
     def ping_latency(self, host):
         """Measure network latency using ping."""
         try:
-            result = subprocess.run(
-                ['ping', '-c', '1', host], capture_output=True, text=True
-            )
+            result = subprocess.run(['ping', '-c', '1', host], capture_output=True, text=True)
             for line in result.stdout.split("\n"):
                 if "time=" in line:
-                    return float(line.split("time=")[1].split(" ")[0])  # Extract latency in ms
+                    return float(line.split("time=")[1].split(" ")[0])
         except Exception:
-            return None  # If ping fails, return None
+            return None
 
-    def store_data(self, storage_path='storage/data.json'):
-        """Store collected data."""
-        os.makedirs(os.path.dirname(storage_path), exist_ok=True)
-       
-        with open(storage_path, 'a') as file:
-            data = {
-                'timestamp': time.time(),
-                'metrics': self.metrics
-            }
-            json.dump(data, file)
-            file.write('\n')
+    def store_data(self):
+        """Store collected data into separate logs."""
+        base_path = 'storage/logs'
+        os.makedirs(base_path, exist_ok=True)
+
+        for key, value in self.metrics.items():
+            file_path = os.path.join(base_path, f"{key}.json")
+            with open(file_path, 'a') as file:
+                data = {'timestamp': time.time(), 'value': value}
+                json.dump(data, file)
+                file.write('\n')
 
     def run(self):
         """Run the data collector continuously."""
